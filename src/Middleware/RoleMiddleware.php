@@ -7,9 +7,16 @@ use App\Core\Response;
 
 class RoleMiddleware {
     private $roleService;
+    private array $allowedRoles;
 
-    public function __construct() {
+    public function __construct(string ...$roles) {
         $this->roleService = new RoleService();
+        $this->allowedRoles = $roles;
+    }
+
+    public function handle(): bool {
+        $this->checkRole($this->allowedRoles);
+        return true;
     }
 
     /**
