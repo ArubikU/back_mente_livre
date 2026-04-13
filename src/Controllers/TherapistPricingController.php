@@ -5,14 +5,17 @@ namespace App\Controllers;
 use App\Core\BaseController;
 use App\Core\Response;
 use App\Services\TherapistPricingService;
+use App\Services\CacheService;
 use OpenApi\Attributes as OA;
 
 #[OA\Tag(name: "Therapist Pricing", description: "Gestión de precios de terapeutas")]
 class TherapistPricingController extends BaseController {
     private TherapistPricingService $pricingService;
+    private CacheService $cache;
 
     public function __construct() {
         $this->pricingService = new TherapistPricingService();
+        $this->cache = new CacheService();
     }
 
     #[OA\Get(
@@ -81,6 +84,7 @@ class TherapistPricingController extends BaseController {
         $data['therapist_id'] = $therapistId;
         
         $id = $this->pricingService->upsert($data);
+        $this->cache->invalidate('therapists_active');
         Response::json(['data' => ['id' => $id]], 201);
     }
 
@@ -105,6 +109,7 @@ class TherapistPricingController extends BaseController {
         }
         
         $results = $this->pricingService->updateBatch($therapistId, $data);
+        $this->cache->invalidate('therapists_active');
         Response::json(['data' => $results]);
     }
 
@@ -141,6 +146,7 @@ class TherapistPricingController extends BaseController {
             
             // Obtener el precio actualizado para devolverlo en la respuesta
             $updatedPricing = $this->pricingService->getById($id);
+            $this->cache->invalidate('therapists_active');
             Response::json(['data' => $updatedPricing]);
         } catch (\Exception $e) {
             error_log('Error actualizando precio: ' . $e->getMessage());
@@ -173,7 +179,8 @@ class TherapistPricingController extends BaseController {
         if (!$success) {
             Response::error('No se pudo eliminar el precio', 400);
         }
-        
+
+        $this->cache->invalidate('therapists_active');
         Response::json(['message' => 'Precio eliminado exitosamente']);
     }
 }
